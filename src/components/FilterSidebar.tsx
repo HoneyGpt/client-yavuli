@@ -11,8 +11,21 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-const FilterSidebar = ({ filters, onFilterChange, onClearAll }) => {
-  const [localPriceRange, setLocalPriceRange] = useState([0, 100000]);
+interface Filters {
+  category: string;
+  priceRange: [number, number];
+  condition: string;
+  verified: boolean;
+}
+
+interface FilterSidebarProps {
+  filters: Filters;
+  onFilterChange: (filter: Partial<Filters>) => void;
+  onClearAll: () => void;
+}
+
+const FilterSidebar = ({ filters, onFilterChange, onClearAll }: FilterSidebarProps) => {
+  const [localPriceRange, setLocalPriceRange] = useState<[number, number]>([0, 100000]);
 
   const categories = [
     "Electronics",
@@ -26,25 +39,16 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll }) => {
 
   const conditions = ["New", "Like New", "Used"];
 
-  // Sync local price range with filters
   useEffect(() => {
     setLocalPriceRange(filters.priceRange);
   }, [filters.priceRange]);
 
   const handleCategoryChange = (category: string, checked: boolean) => {
-    if (checked) {
-      onFilterChange({ category });
-    } else {
-      onFilterChange({ category: "" });
-    }
+    onFilterChange({ category: checked ? category : "" });
   };
 
   const handleConditionChange = (condition: string, checked: boolean) => {
-    if (checked) {
-      onFilterChange({ condition });
-    } else {
-      onFilterChange({ condition: "" });
-    }
+    onFilterChange({ condition: checked ? condition : "" });
   };
 
   const handleVerifiedChange = (checked: boolean) => {
@@ -52,11 +56,12 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll }) => {
   };
 
   const handlePriceRangeChange = (value: number[]) => {
-    setLocalPriceRange(value);
+    // ✅ FIX: cast to tuple
+    setLocalPriceRange([value[0], value[1]] as [number, number]);
   };
 
   const handlePriceRangeCommit = (value: number[]) => {
-    onFilterChange({ priceRange: value });
+    onFilterChange({ priceRange: [value[0], value[1]] as [number, number] });
   };
 
   const handleClearAll = () => {
@@ -64,13 +69,8 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll }) => {
     onClearAll();
   };
 
-  const isCategoryChecked = (category: string) => {
-    return filters.category === category;
-  };
-
-  const isConditionChecked = (condition: string) => {
-    return filters.condition === condition;
-  };
+  const isCategoryChecked = (category: string) => filters.category === category;
+  const isConditionChecked = (condition: string) => filters.condition === condition;
 
   return (
     <div className="w-full space-y-4">
@@ -84,22 +84,21 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll }) => {
       <Separator />
 
       <Accordion type="multiple" defaultValue={["category", "price", "condition"]} className="w-full">
-        {/* Categories */}
+        {/* Category */}
         <AccordionItem value="category">
           <AccordionTrigger className="text-sm font-semibold">Category</AccordionTrigger>
           <AccordionContent>
             <div className="space-y-3 pt-2">
               {categories.map((category) => (
                 <div key={category} className="flex items-center space-x-2">
-                  <Checkbox 
-                    id={category} 
+                  <Checkbox
+                    id={category}
                     checked={isCategoryChecked(category)}
-                    onCheckedChange={(checked) => handleCategoryChange(category, checked)}
+                    onCheckedChange={(checked) =>
+                      handleCategoryChange(category, checked === true)
+                    }
                   />
-                  <Label
-                    htmlFor={category}
-                    className="text-sm font-normal cursor-pointer"
-                  >
+                  <Label htmlFor={category} className="text-sm font-normal cursor-pointer">
                     {category}
                   </Label>
                 </div>
@@ -108,7 +107,7 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll }) => {
           </AccordionContent>
         </AccordionItem>
 
-        {/* Price Range */}
+        {/* Price */}
         <AccordionItem value="price">
           <AccordionTrigger className="text-sm font-semibold">Price Range</AccordionTrigger>
           <AccordionContent>
@@ -136,15 +135,14 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll }) => {
             <div className="space-y-3 pt-2">
               {conditions.map((condition) => (
                 <div key={condition} className="flex items-center space-x-2">
-                  <Checkbox 
-                    id={condition} 
+                  <Checkbox
+                    id={condition}
                     checked={isConditionChecked(condition)}
-                    onCheckedChange={(checked) => handleConditionChange(condition, checked)}
+                    onCheckedChange={(checked) =>
+                      handleConditionChange(condition, checked === true)
+                    }
                   />
-                  <Label
-                    htmlFor={condition}
-                    className="text-sm font-normal cursor-pointer"
-                  >
+                  <Label htmlFor={condition} className="text-sm font-normal cursor-pointer">
                     {condition}
                   </Label>
                 </div>
@@ -158,10 +156,10 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll }) => {
           <AccordionTrigger className="text-sm font-semibold">Seller Type</AccordionTrigger>
           <AccordionContent>
             <div className="flex items-center space-x-2 pt-2">
-              <Checkbox 
-                id="verified-only" 
+              <Checkbox
+                id="verified-only"
                 checked={filters.verified || false}
-                onCheckedChange={handleVerifiedChange}
+                onCheckedChange={(checked) => handleVerifiedChange(checked === true)}
               />
               <Label htmlFor="verified-only" className="text-sm font-normal cursor-pointer">
                 Only verified sellers
@@ -171,12 +169,9 @@ const FilterSidebar = ({ filters, onFilterChange, onClearAll }) => {
         </AccordionItem>
       </Accordion>
 
-      <Button 
+      <Button
         className="w-full bg-gradient-hero text-white hover:opacity-90"
-        onClick={() => {
-          // Apply any pending changes (like price range)
-          onFilterChange({ priceRange: localPriceRange });
-        }}
+        onClick={() => onFilterChange({ priceRange: localPriceRange })}
       >
         Apply Filters
       </Button>

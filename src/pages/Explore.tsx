@@ -17,13 +17,20 @@ const Explore = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeQuickFilter, setActiveQuickFilter] = useState("");
-  const [filters, setFilters] = useState({
-    category: "",
-    priceRange: [0, 100000],
-    condition: "",
-    verified: false,
-    sortBy: "relevance"
-  });
+  const [filters, setFilters] = useState<{
+  category: string;
+  priceRange: [number, number];
+  condition: string;
+  verified: boolean;
+  sortBy: string;
+}>({
+  category: "",
+  priceRange: [0, 100000],
+  condition: "",
+  verified: false,
+  sortBy: "relevance",
+});
+
 
   // Fetch products
   useEffect(() => {
