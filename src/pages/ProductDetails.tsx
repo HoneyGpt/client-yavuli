@@ -35,20 +35,69 @@ const ProductDetails = () => {
         setLoading(true);
         setError(null);
 
-        console.log("Fetching product via listingsAPI:", id);
-        const allProducts = await listingsAPI.getAll();
+        console.log("Fetching product via listingsAPI for id:", id);
 
-        // find product by id (Supabase returns strings)
-        const productData = allProducts.find((p: any) => String(p.id) === String(id));
+        const raw = await (listingsAPI.getAll ? listingsAPI.getAll() : (listingsAPI as any)());
+        // Debug: print out exactly what the API helper returned so you can inspect the shape
+        console.log("listingsAPI.getAll() response:", raw);
+
+        // Normalize many common shapes into an array of products:
+        let allProducts: any[] = [];
+        if (Array.isArray(raw)) {
+          allProducts = raw;
+        } else if (raw?.data && Array.isArray(raw.data)) {
+          allProducts = raw.data;
+        } else if (raw?.rows && Array.isArray(raw.rows)) {
+          allProducts = raw.rows;
+        } else if (raw?.listings && Array.isArray(raw.listings)) {
+          allProducts = raw.listings;
+        } else {
+          // If nothing matched, but raw itself has items (e.g., object keyed by ids), try to coerce
+          try {
+            const maybeArray = Object.values(raw || {}).filter(Boolean);
+            if (Array.isArray(maybeArray) && maybeArray.length) {
+              allProducts = maybeArray;
+            }
+          } catch {
+            allProducts = [];
+          }
+        }
+
+        // find product by id (handle string/number mismatch)
+        let productData = allProducts.find((p: any) => String(p?.id) === String(id));
+
+        // If we couldn't find in the list, try a single-item helper if available
+        if (!productData) {
+          const maybeGet = (listingsAPI as any).get || (listingsAPI as any).getById || (listingsAPI as any).fetchById;
+          if (typeof maybeGet === "function") {
+            try {
+              const singleRaw = await maybeGet(id);
+              console.log("listingsAPI.get(id) response:", singleRaw);
+              // normalize single response shapes
+              if (!singleRaw) {
+                productData = null;
+              } else if (Array.isArray(singleRaw)) {
+                productData = singleRaw[0] ?? null;
+              } else if (singleRaw?.data) {
+                productData = Array.isArray(singleRaw.data) ? singleRaw.data[0] : singleRaw.data;
+              } else {
+                productData = singleRaw;
+              }
+            } catch (err) {
+              console.warn("listingsAPI.get(id) failed:", err);
+            }
+          }
+        }
 
         if (!productData) {
-          setError("Product not found in Supabase");
+          setError("Product not found in listingsAPI response");
+          setProduct(null);
         } else {
           setProduct(productData);
         }
       } catch (err: any) {
         console.error("Error fetching product:", err);
-        setError(err.message || "Failed to load product");
+        setError(err?.message || "Failed to load product");
       } finally {
         setLoading(false);
       }
@@ -87,6 +136,17 @@ const ProductDetails = () => {
       </div>
     );
   }
+
+  // Safely format price (avoid calling toLocaleString on undefined)
+  const priceStr =
+    product?.price != null && !isNaN(Number(product.price))
+      ? `₹${Number(product.price).toLocaleString()}`
+      : "₹0";
+
+  const originalPriceStr =
+    product?.original_price != null && !isNaN(Number(product.original_price))
+      ? `₹${Number(product.original_price).toLocaleString()}`
+      : null;
 
   // ------------------ MAIN PRODUCT VIEW -------------------
   return (
@@ -128,11 +188,11 @@ const ProductDetails = () => {
               </div>
 
               <p className="text-4xl font-bold text-primary mb-2">
-                ₹{product.price?.toLocaleString()}
+                {priceStr}
               </p>
-              {product.original_price && (
+              {originalPriceStr && (
                 <p className="text-lg text-muted-foreground line-through">
-                  ₹{product.original_price.toLocaleString()}
+                  {originalPriceStr}
                 </p>
               )}
             </div>
@@ -147,7 +207,7 @@ const ProductDetails = () => {
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
                     <span>
-                      {product.location_city}, {product.location_state}
+                      {product.location_city}{product.location_state ? `, ${product.location_state}` : ""}
                     </span>
                   </div>
                 )}
