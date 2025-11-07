@@ -35,12 +35,38 @@ const ProductDetails = () => {
         setLoading(true);
         setError(null);
 
-        console.log("Fetching product via listingsAPI for id:", id);
+        console.log("ProductDetails: requested id =", id);
 
+        // Prefer a single-item helper if it exists
+        const singleFetchFn =
+          (listingsAPI as any).get ||
+          (listingsAPI as any).getById ||
+          (listingsAPI as any).fetchById;
+
+        if (typeof singleFetchFn === "function") {
+          try {
+            const singleResp = await singleFetchFn(id);
+            console.log("listingsAPI.singleFetch response:", singleResp);
+            // try to normalize
+            const candidate =
+              singleResp && singleResp?.data
+                ? Array.isArray(singleResp.data)
+                  ? singleResp.data[0]
+                  : singleResp.data
+                : singleResp;
+            if (candidate) {
+              setProduct(candidate);
+              return;
+            }
+          } catch (err) {
+            console.warn("single-item fetch failed, falling back to getAll:", err);
+          }
+        }
+
+        // Fallback: fetch all and find the item
         const raw = await (listingsAPI.getAll ? listingsAPI.getAll() : (listingsAPI as any)());
-        console.log("listingsAPI.getAll() response:", raw);
+        console.log("listingsAPI.getAll() raw response:", raw);
 
-        // Normalize many common shapes into an array of products:
         let allProducts: any[] = [];
         if (Array.isArray(raw)) {
           allProducts = raw;
@@ -51,49 +77,25 @@ const ProductDetails = () => {
         } else if (raw?.listings && Array.isArray(raw.listings)) {
           allProducts = raw.listings;
         } else {
+          // try to coerce any object values into an array as a last resort
           try {
-            const maybeArray = Object.values(raw || {}).filter(Boolean);
-            if (Array.isArray(maybeArray) && maybeArray.length) {
-              allProducts = maybeArray;
-            }
+            const vals = Object.values(raw || {}).filter(Boolean);
+            if (Array.isArray(vals) && vals.length) allProducts = vals;
           } catch {
             allProducts = [];
           }
         }
 
-        // find product by id (handle string/number mismatch)
-        let productData = allProducts.find((p: any) => String(p?.id) === String(id));
+        const found = allProducts.find((p: any) => String(p?.id) === String(id));
 
-        // If not found, try single-item fetch helpers if available
-        if (!productData) {
-          const maybeGet = (listingsAPI as any).get || (listingsAPI as any).getById || (listingsAPI as any).fetchById;
-          if (typeof maybeGet === "function") {
-            try {
-              const singleRaw = await maybeGet(id);
-              console.log("listingsAPI.get(id) response:", singleRaw);
-              if (!singleRaw) {
-                productData = null;
-              } else if (Array.isArray(singleRaw)) {
-                productData = singleRaw[0] ?? null;
-              } else if (singleRaw?.data) {
-                productData = Array.isArray(singleRaw.data) ? singleRaw.data[0] : singleRaw.data;
-              } else {
-                productData = singleRaw;
-              }
-            } catch (err) {
-              console.warn("listingsAPI.get(id) failed:", err);
-            }
-          }
-        }
-
-        if (!productData) {
-          setError("Product not found in listingsAPI response");
+        if (!found) {
+          setError("Product not found");
           setProduct(null);
         } else {
-          setProduct(productData);
+          setProduct(found);
         }
       } catch (err: any) {
-        console.error("Error fetching product:", err);
+        console.error("Error in ProductDetails fetch:", err);
         setError(err?.message || "Failed to load product");
       } finally {
         setLoading(false);
@@ -121,11 +123,7 @@ const ProductDetails = () => {
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold text-primary">Product not found</h1>
           <p className="text-muted-foreground mt-2">{error}</p>
-          <Button
-            variant="outline"
-            className="mt-4"
-            onClick={() => window.history.back()}
-          >
+          <Button variant="outline" className="mt-4" onClick={() => window.history.back()}>
             Go Back
           </Button>
         </div>
@@ -149,16 +147,18 @@ const ProductDetails = () => {
 
       <div className="container mx-auto px-4 py-6">
         <div className="grid lg:grid-cols-2 gap-8">
+          {/* Image */}
           <div className="space-y-4 animate-fade-in">
             <div className="aspect-square rounded-xl overflow-hidden bg-muted">
               <img
-                src={product.images?.[0] || "/placeholder.jpg"}
+                src={(product.images && product.images[0]) || "/placeholder.jpg"}
                 alt={product.title}
                 className="w-full h-full object-cover"
               />
             </div>
           </div>
 
+          {/* Info */}
           <div className="space-y-6 animate-fade-in">
             <div>
               <div className="flex items-start justify-between mb-2">
@@ -169,9 +169,7 @@ const ProductDetails = () => {
               </div>
 
               <div className="flex items-center gap-2 mb-4">
-                {product.condition && (
-                  <Badge className="bg-accent text-white">{product.condition}</Badge>
-                )}
+                {product.condition && <Badge className="bg-accent text-white">{product.condition}</Badge>}
                 {product.verified && (
                   <Badge variant="outline" className="border-accent text-accent">
                     ✓ Verified Seller
@@ -179,14 +177,8 @@ const ProductDetails = () => {
                 )}
               </div>
 
-              <p className="text-4xl font-bold text-primary mb-2">
-                {priceStr}
-              </p>
-              {originalPriceStr && (
-                <p className="text-lg text-muted-foreground line-through">
-                  {originalPriceStr}
-                </p>
-              )}
+              <p className="text-4xl font-bold text-primary mb-2">{priceStr}</p>
+              {originalPriceStr && <p className="text-lg text-muted-foreground line-through">{originalPriceStr}</p>}
             </div>
 
             <Separator />
@@ -198,7 +190,8 @@ const ProductDetails = () => {
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
                     <span>
-                      {product.location_city}{product.location_state ? `, ${product.location_state}` : ""}
+                      {product.location_city}
+                      {product.location_state ? `, ${product.location_state}` : ""}
                     </span>
                   </div>
                 )}
@@ -211,10 +204,7 @@ const ProductDetails = () => {
                 {product.created_at && (
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>
-                      Posted on{" "}
-                      {new Date(product.created_at).toLocaleDateString()}
-                    </span>
+                    <span>Posted on {new Date(product.created_at).toLocaleDateString()}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2">
@@ -231,10 +221,7 @@ const ProductDetails = () => {
                 <ShoppingCart className="h-4 w-4 mr-2" />
                 Add to Cart
               </Button>
-              <Button
-                variant="outline"
-                className="flex-1 border-accent text-accent hover:bg-accent hover:text-white"
-              >
+              <Button variant="outline" className="flex-1 border-accent text-accent hover:bg-accent hover:text-white">
                 Buy Now
               </Button>
             </div>
@@ -248,17 +235,13 @@ const ProductDetails = () => {
 
             <div>
               <h3 className="font-semibold text-lg mb-3">Description</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {product.description || "No description provided."}
-              </p>
+              <p className="text-muted-foreground leading-relaxed">{product.description || "No description provided."}</p>
             </div>
 
             {product.why_selling && (
               <Card className="p-4 bg-muted/30">
                 <h4 className="font-semibold text-sm mb-2">Reason for Selling</h4>
-                <p className="text-sm text-muted-foreground">
-                  {product.why_selling}
-                </p>
+                <p className="text-sm text-muted-foreground">{product.why_selling}</p>
               </Card>
             )}
 
@@ -266,16 +249,12 @@ const ProductDetails = () => {
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">
-                    Age: {product.age_of_item}
-                  </span>
+                  <span className="text-muted-foreground">Age: {product.age_of_item}</span>
                 </div>
                 {product.bill_uploaded && (
                   <div className="flex items-center gap-2">
                     <Receipt className="h-4 w-4 text-accent" />
-                    <span className="text-accent font-medium">
-                      Bill Available
-                    </span>
+                    <span className="text-accent font-medium">Bill Available</span>
                   </div>
                 )}
               </div>
