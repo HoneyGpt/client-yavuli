@@ -123,7 +123,11 @@ const ProductDetails = () => {
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold text-primary">Product not found</h1>
           <p className="text-muted-foreground mt-2">{error}</p>
-          <Button variant="outline" className="mt-4" onClick={() => window.history.back()}>
+          <Button
+            variant="outline"
+            className="mt-4"
+            onClick={() => window.history.back()}
+          >
             Go Back
           </Button>
         </div>
