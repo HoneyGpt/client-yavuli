@@ -38,7 +38,6 @@ const ProductDetails = () => {
         console.log("Fetching product via listingsAPI for id:", id);
 
         const raw = await (listingsAPI.getAll ? listingsAPI.getAll() : (listingsAPI as any)());
-        // Debug: print out exactly what the API helper returned so you can inspect the shape
         console.log("listingsAPI.getAll() response:", raw);
 
         // Normalize many common shapes into an array of products:
@@ -52,7 +51,6 @@ const ProductDetails = () => {
         } else if (raw?.listings && Array.isArray(raw.listings)) {
           allProducts = raw.listings;
         } else {
-          // If nothing matched, but raw itself has items (e.g., object keyed by ids), try to coerce
           try {
             const maybeArray = Object.values(raw || {}).filter(Boolean);
             if (Array.isArray(maybeArray) && maybeArray.length) {
@@ -66,14 +64,13 @@ const ProductDetails = () => {
         // find product by id (handle string/number mismatch)
         let productData = allProducts.find((p: any) => String(p?.id) === String(id));
 
-        // If we couldn't find in the list, try a single-item helper if available
+        // If not found, try single-item fetch helpers if available
         if (!productData) {
           const maybeGet = (listingsAPI as any).get || (listingsAPI as any).getById || (listingsAPI as any).fetchById;
           if (typeof maybeGet === "function") {
             try {
               const singleRaw = await maybeGet(id);
               console.log("listingsAPI.get(id) response:", singleRaw);
-              // normalize single response shapes
               if (!singleRaw) {
                 productData = null;
               } else if (Array.isArray(singleRaw)) {
@@ -106,7 +103,6 @@ const ProductDetails = () => {
     fetchProduct();
   }, [id]);
 
-  // ------------------ UI STATES -------------------
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -137,7 +133,6 @@ const ProductDetails = () => {
     );
   }
 
-  // Safely format price (avoid calling toLocaleString on undefined)
   const priceStr =
     product?.price != null && !isNaN(Number(product.price))
       ? `₹${Number(product.price).toLocaleString()}`
@@ -148,14 +143,12 @@ const ProductDetails = () => {
       ? `₹${Number(product.original_price).toLocaleString()}`
       : null;
 
-  // ------------------ MAIN PRODUCT VIEW -------------------
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       <div className="container mx-auto px-4 py-6">
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Product Image */}
           <div className="space-y-4 animate-fade-in">
             <div className="aspect-square rounded-xl overflow-hidden bg-muted">
               <img
@@ -166,7 +159,6 @@ const ProductDetails = () => {
             </div>
           </div>
 
-          {/* Product Info */}
           <div className="space-y-6 animate-fade-in">
             <div>
               <div className="flex items-start justify-between mb-2">
@@ -199,7 +191,6 @@ const ProductDetails = () => {
 
             <Separator />
 
-            {/* Seller Info */}
             <Card className="p-4 bg-muted/50">
               <h3 className="font-semibold mb-3">Seller Information</h3>
               <div className="space-y-2 text-sm">
@@ -235,7 +226,6 @@ const ProductDetails = () => {
               </div>
             </Card>
 
-            {/* Buttons */}
             <div className="flex gap-3">
               <Button className="flex-1 bg-gradient-hero text-white hover:shadow-glow">
                 <ShoppingCart className="h-4 w-4 mr-2" />
@@ -256,7 +246,6 @@ const ProductDetails = () => {
 
             <Separator />
 
-            {/* Description */}
             <div>
               <h3 className="font-semibold text-lg mb-3">Description</h3>
               <p className="text-muted-foreground leading-relaxed">
@@ -264,7 +253,6 @@ const ProductDetails = () => {
               </p>
             </div>
 
-            {/* Additional Info */}
             {product.why_selling && (
               <Card className="p-4 bg-muted/30">
                 <h4 className="font-semibold text-sm mb-2">Reason for Selling</h4>
