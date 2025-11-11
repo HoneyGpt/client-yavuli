@@ -38,25 +38,25 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-6">
             <Link 
               to="/explore" 
-              className={`text-sm font-medium transition-colors hover:text-accent ${isActive('/explore') ? 'text-accent' : 'text-foreground'}`}
+              className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/explore') ? 'text-primary font-semibold' : 'text-foreground'}`}
             >
               Explore
             </Link>
             <Link 
               to="/sell" 
-              className={`text-sm font-medium transition-colors hover:text-accent ${isActive('/sell') ? 'text-accent' : 'text-foreground'}`}
+              className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/sell') ? 'text-primary font-semibold' : 'text-foreground'}`}
             >
               Sell
             </Link>
             <Link 
               to="/about" 
-              className={`text-sm font-medium transition-colors hover:text-accent ${isActive('/about') ? 'text-accent' : 'text-foreground'}`}
+              className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/about') ? 'text-primary font-semibold' : 'text-foreground'}`}
             >
               About
             </Link>
             <Link 
               to="/contact" 
-              className={`text-sm font-medium transition-colors hover:text-accent ${isActive('/contact') ? 'text-accent' : 'text-foreground'}`}
+              className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/contact') ? 'text-primary font-semibold' : 'text-foreground'}`}
             >
               Contact
             </Link>

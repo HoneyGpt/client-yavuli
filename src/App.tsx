@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Explore from "./pages/Explore";
 import About from "./pages/About";
 import Sell from "./pages/Sell";
+import Contact from "./pages/Contact"; // Import the new Contact page
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ function App() {
           <Route path="/explore" element={<Explore />} />
           <Route path="/about" element={<About />} />
           <Route path="/sell" element={<Sell />} />
+          <Route path="/contact" element={<Contact />} /> {/* Add the new route */}
         </Routes>
       </Router>
     </QueryClientProvider>
