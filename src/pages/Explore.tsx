@@ -170,7 +170,7 @@ const Explore = () => {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProducts.map(product => (
                 <Link to={`/product/${product.id}`} key={product.id}>
-                  <div className="bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group hover:scale-105">
+                  <div className="bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-transform duration-300 group transform group-hover:scale-105">
                     <div className="relative">
                       <img src={product.images[0]} alt={product.title} className="w-full h-48 object-cover" />
                       <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold">
