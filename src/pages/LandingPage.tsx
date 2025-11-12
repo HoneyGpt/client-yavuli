@@ -21,7 +21,7 @@ const LandingPage = () => {
               <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 transition-shadow duration-300 ease-in-out shadow-lg hover:shadow-glow">Start Selling</Button>
             </Link>
             <Link to="/explore">
-              <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-accent hover:text-accent-foreground animate-pulse">Explore Listings</Button>
+              <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-accent hover:text-accent-foreground">Explore Listings</Button>
             </Link>
           </div>
         </div>
